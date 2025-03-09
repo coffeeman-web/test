@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>簡易公告系統</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .announcement {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        .announcement-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        .announcement-title {
+            font-weight: bold;
+        }
+        .announcement-date {
+            color: #666;
+            font-size: 0.9em;
+        }
+        .announcement-content {
+            margin-top: 5px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 8px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .controls {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>簡易公告系統</h1>
+    
+    <div class="controls">
+        <button id="addBtn">新增公告</button>
+        <button id="clearBtn">清除所有公告</button>
+    </div>
+    
+    <div id="addForm" style="display: none;">
+        <h2>新增公告</h2>
+        <div class="form-group">
+            <label for="title">標題：</label>
+            <input type="text" id="title" required>
+        </div>
+        <div class="form-group">
+            <label for="content">內容：</label>
+            <textarea id="content" rows="5" required></textarea>
+        </div>
+        <button id="saveBtn">保存</button>
+        <button id="cancelBtn">取消</button>
+    </div>
+    
+    <h2>公告列表</h2>
+    <div id="announcementsList"></div>
+    
+    <script>
+        // DOM 元素
+        const addBtn = document.getElementById('addBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const addForm = document.getElementById('addForm');
+        const saveBtn = document.getElementById('saveBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const titleInput = document.getElementById('title');
+        const contentInput = document.getElementById('content');
+        const announcementsList = document.getElementById('announcementsList');
+        
+        // 從 localStorage 獲取公告數據，如果沒有則初始化為空陣列
+        function getAnnouncements() {
+            const savedAnnouncements = localStorage.getItem('announcements');
+            return savedAnnouncements ? JSON.parse(savedAnnouncements) : [];
+        }
+        
+        // 保存公告數據到 localStorage
+        function saveAnnouncements(announcements) {
+            localStorage.setItem('announcements', JSON.stringify(announcements));
+        }
+        
+        // 顯示所有公告
+        function displayAnnouncements() {
+            const announcements = getAnnouncements();
+            announcementsList.innerHTML = '';
+            
+            if (announcements.length === 0) {
+                announcementsList.innerHTML = '<p>目前沒有公告</p>';
+                return;
+            }
+            
+            announcements.forEach((announcement, index) => {
+                const announcementDiv = document.createElement('div');
+                announcementDiv.className = 'announcement';
+                
+                const headerDiv = document.createElement('div');
+                headerDiv.className = 'announcement-header';
+                
+                const titleSpan = document.createElement('span');
+                titleSpan.className = 'announcement-title';
+                titleSpan.textContent = announcement.title;
+                
+                const dateSpan = document.createElement('span');
+                dateSpan.className = 'announcement-date';
+                dateSpan.textContent = new Date(announcement.date).toLocaleString();
+                
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'announcement-content';
+                contentDiv.textContent = announcement.content;
+                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = '刪除';
+                deleteBtn.style.marginTop = '10px';
+                deleteBtn.addEventListener('click', () => {
+                    deleteAnnouncement(index);
+                });
+                
+                headerDiv.appendChild(titleSpan);
+                headerDiv.appendChild(dateSpan);
+                
+                announcementDiv.appendChild(headerDiv);
+                announcementDiv.appendChild(contentDiv);
+                announcementDiv.appendChild(deleteBtn);
+                
+                announcementsList.appendChild(announcementDiv);
+            });
+        }
+        
+        // 添加新公告
+        function addAnnouncement(title, content) {
+            const announcements = getAnnouncements();
+            const newAnnouncement = {
+                title: title,
+                content: content,
+                date: new Date().getTime()
+            };
+            
+            announcements.push(newAnnouncement);
+            saveAnnouncements(announcements);
+            displayAnnouncements();
+        }
+        
+        // 刪除公告
+        function deleteAnnouncement(index) {
+            const announcements = getAnnouncements();
+            if (confirm('確定要刪除這條公告嗎？')) {
+                announcements.splice(index, 1);
+                saveAnnouncements(announcements);
+                displayAnnouncements();
+            }
+        }
+        
+        // 清除所有公告
+        function clearAnnouncements() {
+            if (confirm('確定要清除所有公告嗎？')) {
+                localStorage.removeItem('announcements');
+                displayAnnouncements();
+            }
+        }
+        
+        // 事件監聽
+        addBtn.addEventListener('click', () => {
+            addForm.style.display = 'block';
+        });
+        
+        cancelBtn.addEventListener('click', () => {
+            addForm.style.display = 'none';
+            titleInput.value = '';
+            contentInput.value = '';
+        });
+        
+        saveBtn.addEventListener('click', () => {
+            const title = titleInput.value.trim();
+            const content = contentInput.value.trim();
+            
+            if (!title || !content) {
+                alert('請填寫標題和內容');
+                return;
+            }
+            
+            addAnnouncement(title, content);
+            
+            // 重置表單
+            titleInput.value = '';
+            contentInput.value = '';
+            addForm.style.display = 'none';
+        });
+        
+        clearBtn.addEventListener('click', clearAnnouncements);
+        
+        // 頁面加載時顯示公告
+        displayAnnouncements();
+        
+        // 監聽存儲事件，實現多標籤頁同步
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'announcements') {
+                displayAnnouncements();
+            }
+        });
+    </script>
+</body>
+</html>
